@@ -23,7 +23,7 @@ export default function ContactPage() {
               <div>
                 <dt className="font-medium text-foreground">Workshop</dt>
                 <dd className="text-muted-foreground">
-                  22, Leather Lane, Jajmau, Kanpur, Uttar Pradesh 208010, India
+                  600 C-Block, Defence Colony, Jajmau, Kanpur, Uttar Pradesh 208010, India
                 </dd>
               </div>
             </div>
