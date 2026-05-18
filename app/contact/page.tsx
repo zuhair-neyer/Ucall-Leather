@@ -31,7 +31,7 @@ export default function ContactPage() {
               <Mail className="mt-1 h-5 w-5 text-accent" />
               <div>
                 <dt className="font-medium text-foreground">Email</dt>
-                <dd className="text-muted-foreground">hello@ucall.in</dd>
+                <dd className="text-muted-foreground">ucallleather.india@gmail.com</dd>
               </div>
             </div>
             <div className="flex items-start gap-3">
