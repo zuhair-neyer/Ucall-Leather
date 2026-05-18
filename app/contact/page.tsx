@@ -23,7 +23,7 @@ export default function ContactPage() {
               <div>
                 <dt className="font-medium text-foreground">Workshop</dt>
                 <dd className="text-muted-foreground">
-                  22, Leather Lane, Jajmau, Kanpur, Uttar Pradesh 208010, India
+                  600 C-Block, Defence Colony, Jajmau, Kanpur, Uttar Pradesh 208010, India
                 </dd>
               </div>
             </div>
@@ -31,14 +31,14 @@ export default function ContactPage() {
               <Mail className="mt-1 h-5 w-5 text-accent" />
               <div>
                 <dt className="font-medium text-foreground">Email</dt>
-                <dd className="text-muted-foreground">hello@ucall.in</dd>
+                <dd className="text-muted-foreground">ucallleather.india@gmail.com</dd>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Phone className="mt-1 h-5 w-5 text-accent" />
               <div>
                 <dt className="font-medium text-foreground">Phone</dt>
-                <dd className="text-muted-foreground">+91 98765 43210</dd>
+                <dd className="text-muted-foreground">+91 9335228107</dd>
               </div>
             </div>
           </dl>
