@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* UCALL brand palette */
+  --background: #f5f0e8; /* cream */
+  --foreground: #3b1f0a; /* dark brown */
+  --card: #ffffff;
+  --card-foreground: #3b1f0a;
+  --popover: #ffffff;
+  --popover-foreground: #3b1f0a;
+  --primary: #3b1f0a;
+  --primary-foreground: #f5f0e8;
+  --secondary: #eadfce;
+  --secondary-foreground: #3b1f0a;
+  --muted: #ece2d0;
+  --muted-foreground: #6b5339;
+  --accent: #8b5a2b;
+  --accent-foreground: #f5f0e8;
+  --destructive: #b3261e;
+  --destructive-foreground: #f5f0e8;
+  --border: #d9c9ae;
+  --input: #d9c9ae;
+  --ring: #8b5a2b;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #1a0e04;
+  --foreground: #f5f0e8;
+  --card: #2a1608;
+  --card-foreground: #f5f0e8;
+  --popover: #2a1608;
+  --popover-foreground: #f5f0e8;
+  --primary: #f5f0e8;
+  --primary-foreground: #3b1f0a;
+  --secondary: #3b1f0a;
+  --secondary-foreground: #f5f0e8;
+  --muted: #3b1f0a;
+  --muted-foreground: #c4b094;
+  --accent: #8b5a2b;
+  --accent-foreground: #f5f0e8;
+  --destructive: #b3261e;
+  --destructive-foreground: #f5f0e8;
+  --border: #4a2a10;
+  --input: #4a2a10;
+  --ring: #8b5a2b;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), 'Inter Fallback', system-ui, sans-serif;
+  --font-serif: var(--font-playfair), 'Playfair Display Fallback', Georgia, serif;
+  --font-mono: 'Geist Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+  }
+}
