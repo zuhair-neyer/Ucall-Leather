@@ -46,9 +46,9 @@ function ProductsViewInner({ products }: { products: Product[] }) {
   }, [products, query, category, priceRange])
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+    <div className="grid gap-6 sm:gap-8 lg:grid-cols-[200px_1fr] xl:grid-cols-[240px_1fr]">
       {/* Filters */}
-      <aside className="space-y-8">
+      <aside className="space-y-6 sm:space-y-8">
         <div>
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Search
@@ -58,8 +58,8 @@ function ProductsViewInner({ products }: { products: Product[] }) {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search products..."
-              className="pl-9"
+              placeholder="Search..."
+              className="pl-9 text-sm"
             />
           </div>
         </div>
@@ -68,14 +68,14 @@ function ProductsViewInner({ products }: { products: Product[] }) {
           <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Category
           </label>
-          <div className="flex flex-wrap gap-2 lg:flex-col lg:items-stretch">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 lg:flex-col lg:items-stretch">
             {CATEGORIES.map((c) => (
               <Button
                 key={c}
                 variant={category === c ? "default" : "outline"}
                 size="sm"
                 onClick={() => setCategory(c)}
-                className={
+                className={`text-xs sm:text-sm ${
                   category === c
                     ? "justify-start bg-primary text-primary-foreground hover:bg-primary/90"
                     : "justify-start border-border text-foreground"
@@ -108,11 +108,11 @@ function ProductsViewInner({ products }: { products: Product[] }) {
       {/* Grid */}
       <div>
         {filtered.length === 0 ? (
-          <div className="flex h-72 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+          <div className="flex h-56 sm:h-72 items-center justify-center rounded-lg border border-dashed border-border text-xs sm:text-sm text-muted-foreground">
             No products match your filters.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

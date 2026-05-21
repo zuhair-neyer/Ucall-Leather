@@ -117,30 +117,31 @@ export function AccountView() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-foreground mb-8">My Account</h1>
+      <div className="mx-auto w-full max-w-4xl px-3 sm:px-4 py-8 sm:py-12 lg:px-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8">My Account</h1>
 
         {/* Profile Section */}
-        <div className="rounded-lg border border-border bg-card p-6 mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-6">Profile Information</h2>
+        <div className="rounded-lg border border-border bg-card p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Profile Information</h2>
           
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <Label htmlFor="name" className="text-sm font-medium text-foreground">
+              <Label htmlFor="name" className="text-xs sm:text-sm font-medium text-foreground">
                 Full Name
               </Label>
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="flex-1"
+                  className="flex-1 text-sm"
                 />
                 <Button
                   onClick={handleSaveName}
                   disabled={loading}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto whitespace-nowrap min-h-9"
                 >
                   {loading ? "Saving..." : "Save"}
                 </Button>
@@ -148,14 +149,14 @@ export function AccountView() {
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+              <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-foreground">
                 Email Address
               </Label>
               <Input
                 id="email"
                 value={email}
                 disabled
-                className="mt-2 bg-muted text-muted-foreground cursor-not-allowed"
+                className="mt-2 bg-muted text-muted-foreground cursor-not-allowed text-sm"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Email cannot be changed
@@ -165,16 +166,17 @@ export function AccountView() {
         </div>
 
         {/* Addresses Section */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Saved Addresses</h2>
+        <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground">Saved Addresses</h2>
             {addresses.length < 3 && (
               <Button
                 onClick={() => {
                   setEditingId(null)
                   setShowAddForm(!showAddForm)
                 }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                size="sm"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start"
               >
                 <Plus className="h-4 w-4" /> Add Address
               </Button>

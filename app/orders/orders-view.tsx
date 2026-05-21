@@ -201,7 +201,7 @@ export function OrdersView() {
             {orders.map((order) => (
               <div
                 key={order.id}
-                className="rounded-lg border border-border bg-card p-6"
+                className="rounded-lg border border-border bg-card p-4 sm:p-6"
               >
                 {/* Order Header */}
                 <div
@@ -210,31 +210,31 @@ export function OrdersView() {
                     setExpandedId(expandedId === order.id ? null : order.id)
                   }
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm font-semibold text-muted-foreground">
-                          Order ID: {order.id.slice(0, 8)}...
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground truncate">
+                          Order: {order.id.slice(0, 8)}...
                         </p>
                         <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[order.status]}`}
+                          className={`rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold whitespace-nowrap ${statusColors[order.status]}`}
                         >
                           {statusLabels[order.status]}
                         </span>
                       </div>
-                      <p className="mt-2 text-2xl font-bold text-foreground">
+                      <p className="mt-2 text-xl sm:text-2xl font-bold text-foreground">
                         {formatINR(order.total)}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Ordered on {formatDate(order.createdAt)}
+                      <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                        {formatDate(order.createdAt)}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-muted-foreground">
+                      <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
                         {order.items.length} item{order.items.length > 1 ? "s" : ""}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                         {order.paymentMethod}
                       </p>
                     </div>
@@ -243,23 +243,23 @@ export function OrdersView() {
 
                 {/* Expanded Details */}
                 {expandedId === order.id && (
-                  <div className="mt-6 border-t border-border pt-6">
+                  <div className="mt-4 sm:mt-6 border-t border-border pt-4 sm:pt-6">
                     {/* Items */}
-                    <div className="mb-6">
-                      <h3 className="mb-3 font-semibold text-foreground">
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="mb-2 sm:mb-3 font-semibold text-sm sm:text-base text-foreground">
                         Items
                       </h3>
                       <div className="space-y-2">
                         {order.items.map((item, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between rounded bg-muted p-3"
+                            className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between rounded bg-muted p-2 sm:p-3 text-xs sm:text-sm"
                           >
-                            <div>
-                              <p className="font-medium text-foreground">
+                            <div className="min-w-0">
+                              <p className="font-medium text-foreground truncate">
                                 {item.name}
                               </p>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 Qty: {item.quantity}
                               </p>
                             </div>
@@ -272,15 +272,15 @@ export function OrdersView() {
                     </div>
 
                     {/* Price Breakdown */}
-                    <div className="mb-6 space-y-2 border-b border-border pb-6">
-                      <div className="flex justify-between text-sm">
+                    <div className="mb-4 sm:mb-6 space-y-2 border-b border-border pb-4 sm:pb-6">
+                      <div className="flex justify-between text-xs sm:text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
                         <span className="font-semibold text-foreground">
                           {formatINR(order.subtotal)}
                         </span>
                       </div>
                       {order.shipping > 0 && (
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs sm:text-sm">
                           <span className="text-muted-foreground">Shipping</span>
                           <span className="font-semibold text-foreground">
                             {formatINR(order.shipping)}
@@ -290,11 +290,11 @@ export function OrdersView() {
                     </div>
 
                     {/* Shipping Address */}
-                    <div className="mb-6">
-                      <h3 className="mb-3 font-semibold text-foreground">
+                    <div className="mb-4 sm:mb-6">
+                      <h3 className="mb-2 sm:mb-3 font-semibold text-sm sm:text-base text-foreground">
                         Shipping Address
                       </h3>
-                      <div className="space-y-1 rounded bg-muted p-4 text-sm">
+                      <div className="space-y-1 rounded bg-muted p-3 sm:p-4 text-xs sm:text-sm">
                         <p className="font-medium text-foreground">
                           {order.shippingAddress.name}
                         </p>
