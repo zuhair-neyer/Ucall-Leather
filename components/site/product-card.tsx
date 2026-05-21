@@ -25,12 +25,12 @@ export function ProductCard({ product }: { product: ProductCardData }) {
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-4">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+      <div className="flex flex-1 flex-col gap-0.5 p-3 sm:p-4">
+        <span className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground">
           {product.category}
         </span>
-        <h3 className="font-serif text-lg text-foreground">{product.name}</h3>
-        <p className="mt-auto pt-2 text-base font-semibold text-primary">
+        <h3 className="font-serif text-sm sm:text-lg text-foreground line-clamp-2">{product.name}</h3>
+        <p className="mt-auto pt-1.5 sm:pt-2 text-sm sm:text-base font-semibold text-primary">
           {formatINR(product.price)}
         </p>
       </div>

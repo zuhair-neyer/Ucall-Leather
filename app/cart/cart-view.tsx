@@ -353,94 +353,99 @@ export function CartView() {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_380px]">
+    <div className="grid gap-6 sm:gap-8 lg:gap-10 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_380px]">
       {/* ITEMS */}
-      <div className="space-y-8">
-        <div className="space-y-4">
+      <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-3 sm:space-y-4">
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-4 rounded-lg border border-border bg-card p-4"
+              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 rounded-lg border border-border bg-card p-3 sm:p-4"
             >
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+              <div className="relative h-24 w-24 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-md bg-muted">
                 <Image
                   src={
                     item.image || "/placeholder.svg"
                   }
                   alt={item.name}
                   fill
-                  sizes="80px"
+                  sizes="96px"
                   className="object-cover"
                 />
               </div>
 
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <Link
                   href={`/products/${item.id}`}
-                  className="font-serif text-lg text-foreground hover:text-accent"
+                  className="font-serif text-base sm:text-lg text-foreground hover:text-accent line-clamp-2"
                 >
                   {item.name}
                 </Link>
 
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
                   {item.category}
                 </p>
 
-                <p className="mt-1 text-sm font-medium text-primary">
+                <p className="mt-1 text-sm sm:text-base font-medium text-primary">
                   {formatINR(item.price)}
                 </p>
               </div>
 
-              <div className="flex items-center rounded-md border border-border">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center rounded-md border border-border">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateQuantity(
+                        item.id,
+                        item.quantity - 1
+                      )
+                    }
+                    className="p-1.5 sm:p-2 hover:bg-secondary text-xs"
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+
+                  <span className="min-w-6 sm:min-w-8 text-center text-xs sm:text-sm">
+                    {item.quantity}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateQuantity(
+                        item.id,
+                        item.quantity + 1
+                      )
+                    }
+                    className="p-1.5 sm:p-2 hover:bg-secondary text-xs"
+                    aria-label="Increase quantity"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() =>
-                    updateQuantity(
-                      item.id,
-                      item.quantity - 1
-                    )
-                  }
-                  className="p-2 hover:bg-secondary"
+                  onClick={() => removeItem(item.id)}
+                  className="p-1.5 sm:p-2 text-muted-foreground hover:text-destructive ml-1"
+                  aria-label="Remove item"
                 >
-                  <Minus className="h-3 w-3" />
-                </button>
-
-                <span className="min-w-8 text-center text-sm">
-                  {item.quantity}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateQuantity(
-                      item.id,
-                      item.quantity + 1
-                    )
-                  }
-                  className="p-2 hover:bg-secondary"
-                >
-                  <Plus className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() => removeItem(item.id)}
-                className="p-2 text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
             </div>
           ))}
         </div>
 
         {/* SHIPPING */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl text-primary">
+        <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4">
+            <h2 className="font-serif text-lg sm:text-xl text-primary">
               Shipping address
             </h2>
-            <Link href="/account" className="text-xs text-primary hover:underline">
+            <Link href="/account" className="text-xs text-primary hover:underline whitespace-nowrap">
               Manage addresses
             </Link>
           </div>
@@ -482,7 +487,7 @@ export function CartView() {
             </div>
           )}
 
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="name">
                 Full name
@@ -658,39 +663,35 @@ export function CartView() {
         )}
 
         {/* PAYMENT METHOD */}
-        <div className="mt-6 space-y-3">
-          <h3 className="font-medium text-primary">
-            Payment Method
-          </h3>
+          <div className="mt-6 space-y-2 sm:space-y-3">
+            <label className="flex items-center gap-2 rounded-md border border-border p-3 sm:p-4 cursor-pointer text-sm sm:text-base">
+              <input
+                type="radio"
+                name="payment"
+                value="cod"
+                checked={paymentMethod === "cod"}
+                onChange={() =>
+                  setPaymentMethod("cod")
+                }
+              />
 
-          <label className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer">
-            <input
-              type="radio"
-              name="payment"
-              value="cod"
-              checked={paymentMethod === "cod"}
-              onChange={() =>
-                setPaymentMethod("cod")
-              }
-            />
+              <span>Cash on Delivery (COD)</span>
+            </label>
 
-            <span>Cash on Delivery</span>
-          </label>
+            <label className="flex items-center gap-2 rounded-md border border-border p-3 sm:p-4 cursor-pointer text-sm sm:text-base">
+              <input
+                type="radio"
+                name="payment"
+                value="razorpay"
+                checked={paymentMethod === "razorpay"}
+                onChange={() =>
+                  setPaymentMethod("razorpay")
+                }
+              />
 
-          <label className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer">
-            <input
-              type="radio"
-              name="payment"
-              value="razorpay"
-              checked={paymentMethod === "razorpay"}
-              onChange={() =>
-                setPaymentMethod("razorpay")
-              }
-            />
-
-            <span>Prepaid (Razorpay)</span>
-          </label>
-        </div>
+              <span>Prepaid (Razorpay)</span>
+            </label>
+          </div>
 
         <Button
           onClick={onPay}

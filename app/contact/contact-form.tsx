@@ -85,10 +85,10 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
-      <h2 className="font-serif text-2xl text-primary">Send a message</h2>
+    <form onSubmit={onSubmit} className="space-y-4 sm:space-y-5">
+      <h2 className="font-serif text-xl sm:text-2xl text-primary">Send a message</h2>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="c-name">Name</Label>
           <Input
@@ -153,13 +153,15 @@ export function ContactForm() {
         disabled={loading || success}
         style={{
           width: "100%",
-          padding: "10px",
+          padding: "12px 16px",
           backgroundColor: success ? "#4CAF50" : "#3B1F0A",
           color: "white",
           border: "none",
           borderRadius: "6px",
           cursor: loading || success ? "not-allowed" : "pointer",
-          fontSize: "16px",
+          fontSize: "14px",
+          fontWeight: "600",
+          minHeight: "44px",
         }}
       >
         {success ? "Message Sent ✓" : loading ? "Sending..." : "Send Message"}
