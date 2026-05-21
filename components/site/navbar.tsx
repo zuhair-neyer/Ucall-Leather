@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { ShoppingBag, Menu, X, User, LogOut, ShieldCheck } from "lucide-react"
+import { ShoppingBag, Menu, X, User, LogOut, ShieldCheck, Package } from "lucide-react"
 import { useCart } from "@/context/cart-context"
 import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
@@ -86,6 +86,11 @@ export function Navbar() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/orders" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" /> My Orders
+                  </Link>
+                </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link href="/admin" className="flex items-center gap-2">
@@ -93,6 +98,7 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" /> Log out
                 </DropdownMenuItem>
