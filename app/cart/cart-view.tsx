@@ -141,8 +141,10 @@ export function CartView() {
       }
     }
 
-    // RAZORPAY
-    setPlacing(true)
+    // RAZORPAY (Prepaid)
+    if (paymentMethod === "razorpay") {
+      setPlacing(true)
+    }
 
     try {
       const ok = await loadRazorpayScript()
@@ -582,20 +584,18 @@ export function CartView() {
             <span>Cash on Delivery</span>
           </label>
 
-          <label className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer opacity-60">
+          <label className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer">
             <input
               type="radio"
               name="payment"
-              value="online"
-              checked={paymentMethod === "online"}
+              value="razorpay"
+              checked={paymentMethod === "razorpay"}
               onChange={() =>
-                setPaymentMethod("online")
+                setPaymentMethod("razorpay")
               }
             />
 
-            <span>
-              Online Payment (Coming Soon)
-            </span>
+            <span>Prepaid (Razorpay)</span>
           </label>
         </div>
 
@@ -608,8 +608,8 @@ export function CartView() {
           {placing
             ? "Processing..."
             : paymentMethod === "cod"
-            ? "Place Order"
-            : `Pay ${formatINR(total)}`}
+            ? "Place Order (COD)"
+            : `Pay ${formatINR(total)} (Razorpay)`}
         </Button>
 
         <p className="mt-3 text-center text-xs text-muted-foreground">
