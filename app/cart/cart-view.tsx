@@ -3,9 +3,11 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react"
+import { Minus, Plus, Trash2, ShoppingBag, Check } from "lucide-react"
 import { toast } from "sonner"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { addDoc, collection, serverTimestamp, doc, getDoc } from "firebase/firestore"
+import { useEffect } from "react"
+import { SavedAddress } from "@/lib/address"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -51,6 +53,9 @@ export function CartView() {
 
   const [paymentMethod, setPaymentMethod] = useState("cod")
 
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -60,6 +65,52 @@ export function CartView() {
     state: "",
     pincode: "",
   })
+
+  // Fetch saved addresses on component mount
+  useEffect(() => {
+    if (!user || !db) return
+
+    const fetchAddresses = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid))
+        if (userDoc.exists()) {
+          const addresses = userDoc.data().addresses || []
+          setSavedAddresses(addresses)
+          // Pre-fill form with first address if available
+          if (addresses.length > 0 && !form.address) {
+            const addr = addresses[0]
+            setForm({
+              name: profile?.name || "",
+              email: user.email || "",
+              phone: addr.phone,
+              address: addr.street,
+              city: addr.city,
+              state: addr.state,
+              pincode: addr.pincode,
+            })
+            setSelectedAddressId(addr.id)
+          }
+        }
+      } catch (err) {
+        console.log("[v0] Error fetching addresses:", err)
+      }
+    }
+
+    fetchAddresses()
+  }, [user, db, profile])
+
+  const handleSelectAddress = (addr: SavedAddress) => {
+    setForm({
+      name: profile?.name || "",
+      email: user?.email || "",
+      phone: addr.phone,
+      address: addr.street,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+    })
+    setSelectedAddressId(addr.id)
+  }
 
   const shipping =
     subtotal > 0 && subtotal < 5000 ? 199 : 0
@@ -385,9 +436,51 @@ export function CartView() {
 
         {/* SHIPPING */}
         <div className="rounded-lg border border-border bg-card p-6">
-          <h2 className="font-serif text-xl text-primary">
-            Shipping address
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-serif text-xl text-primary">
+              Shipping address
+            </h2>
+            <Link href="/account" className="text-xs text-primary hover:underline">
+              Manage addresses
+            </Link>
+          </div>
+
+          {/* SAVED ADDRESSES */}
+          {savedAddresses.length > 0 && (
+            <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+                Saved addresses
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    onClick={() => handleSelectAddress(addr)}
+                    className={`p-3 rounded-lg border-2 text-left transition-all ${
+                      selectedAddressId === addr.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <span className="inline-block px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-semibold rounded mb-1">
+                          {addr.label}
+                        </span>
+                        <p className="text-xs font-medium text-foreground">{addr.street}</p>
+                        <p className="text-xs text-muted-foreground">{addr.city}, {addr.state} {addr.pincode}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{addr.phone}</p>
+                      </div>
+                      {selectedAddressId === addr.id && (
+                        <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
