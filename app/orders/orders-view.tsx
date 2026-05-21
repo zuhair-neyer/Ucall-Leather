@@ -81,27 +81,43 @@ export function OrdersView() {
     }
 
     setLoading(true)
+    console.log("[v0] Fetching orders for user:", user.uid)
 
     try {
       const q = query(
         collection(db, "orders"),
         where("userId", "==", user.uid),
-        orderBy("createdAt", "desc"),
       )
 
-      const unsub = onSnapshot(q, (snap) => {
-        const data = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Order[]
-        setOrders(data)
-        setLoading(false)
-      })
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          console.log("[v0] Orders snapshot received, docs count:", snap.docs.length)
+          const data = snap.docs
+            .map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+            .sort((a, b) => {
+              const aTime = a.createdAt?.seconds || 0
+              const bTime = b.createdAt?.seconds || 0
+              return bTime - aTime
+            }) as Order[]
+          console.log("[v0] Processed orders:", data)
+          setOrders(data)
+          setLoading(false)
+        },
+        (error) => {
+          console.error("[v0] Firestore error:", error)
+          toast.error(`Failed to load orders: ${error.message}`)
+          setLoading(false)
+        }
+      )
 
       return () => unsub()
     } catch (err: any) {
-      console.error("[v0] Error fetching orders:", err)
-      toast.error("Failed to load orders")
+      console.error("[v0] Error setting up query:", err)
+      toast.error(`Error: ${err.message}`)
       setLoading(false)
     }
   }, [user, authLoading])
