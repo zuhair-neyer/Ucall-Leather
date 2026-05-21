@@ -79,7 +79,7 @@ function ProductsViewInner({ products }: { products: Product[] }) {
                   category === c
                     ? "justify-start bg-primary text-primary-foreground hover:bg-primary/90"
                     : "justify-start border-border text-foreground"
-                }
+                }`}
               >
                 {c}
               </Button>
