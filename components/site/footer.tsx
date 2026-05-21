@@ -74,8 +74,8 @@ export function Footer() {
         <div>
           <h4 className="font-serif text-lg">Get in touch</h4>
           <ul className="mt-4 space-y-2 text-sm text-primary-foreground/80">
-            <li>hello@ucall.in</li>
-            <li>+91 98765 43210</li>
+            <li>ucallleather.india@gmail.com</li>
+            <li>+91 9335228107</li>
             <li>Kanpur, Uttar Pradesh, India</li>
           </ul>
         </div>
