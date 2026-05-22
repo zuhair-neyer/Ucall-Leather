@@ -3,11 +3,12 @@
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/auth-context"
+import { AuthAlert } from "@/components/auth-alert"
+import { getFriendlyAuthError, validateAuthForm } from "@/lib/auth-errors"
 
 function LoginForm() {
   const { login, isConfigured } = useAuth()
@@ -17,57 +18,96 @@ function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isConfigured) {
-      toast.error("Firebase is not configured yet.")
+    setError(null)
+    setSuccess(false)
+
+    // Validate form inputs
+    const validationError = validateAuthForm(
+      { email, password },
+      "login"
+    )
+    if (validationError) {
+      setError(validationError)
       return
     }
+
+    if (!isConfigured) {
+      setError("Sign in service is unavailable. Please try again later.")
+      return
+    }
+
     setLoading(true)
     try {
       await login(email, password)
-      toast.success("Welcome back.")
-      router.push(next)
+      setSuccess(true)
+      setError(null)
+      setTimeout(() => {
+        router.push(next)
+      }, 1000)
     } catch (err: any) {
-      toast.error(err?.message ?? "Login failed.")
+      const friendlyError = getFriendlyAuthError(err)
+      setError(friendlyError)
+      console.log("[v0] Login error:", err?.code || err?.message)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="mt-1"
+    <>
+      {error && (
+        <AuthAlert
+          message={error}
+          type="error"
+          onClose={() => setError(null)}
         />
-      </div>
-      <div>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="mt-1"
+      )}
+      {success && (
+        <AuthAlert
+          message="Welcome back! Redirecting..."
+          type="success"
+          autoClose={false}
         />
-      </div>
-      <Button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        {loading ? "Signing in..." : "Sign in"}
-      </Button>
-    </form>
+      )}
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1"
+            disabled={loading}
+            autoComplete="email"
+          />
+        </div>
+        <div>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1"
+            disabled={loading}
+            autoComplete="current-password"
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          {loading ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
+    </>
   )
 }
 
