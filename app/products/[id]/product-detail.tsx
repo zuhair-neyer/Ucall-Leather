@@ -13,15 +13,28 @@ import type { Product } from "@/lib/products"
 import { ReviewsSection } from "./reviews-section"
 
 export function ProductDetail({ product }: { product: Product }) {
-  const { addItem } = useCart()
+  const { addItem, items } = useCart()
   const [qty, setQty] = useState(1)
   const images = product.images?.length ? product.images : [product.image]
   const [active, setActive] = useState(0)
   const isOutOfStock = product.stock === 0
 
+  // Calculate how much of this product is already in cart
+  const cartQuantity = items.find((item) => item.id === product.id)?.quantity ?? 0
+  // Available stock = total stock - already in cart
+  const availableStock = Math.max(0, (product.stock ?? 0) - cartQuantity)
+
   const handleAdd = () => {
     if (isOutOfStock) {
       toast.error("This product is out of stock")
+      return
+    }
+    if (availableStock === 0) {
+      toast.error(`You already have all available stock in your cart`)
+      return
+    }
+    if (qty > availableStock) {
+      toast.error(`Only ${availableStock} items available`)
       return
     }
     addItem(
@@ -105,27 +118,34 @@ export function ProductDetail({ product }: { product: Product }) {
               <span className="min-w-10 text-center font-medium">{qty}</span>
               <button
                 type="button"
-                onClick={() => setQty((q) => Math.min(q + 1, product.stock || 1))}
+                onClick={() => setQty((q) => Math.min(q + 1, availableStock))}
                 className="p-3 hover:bg-secondary disabled:opacity-50"
                 aria-label="Increase quantity"
-                disabled={isOutOfStock || qty >= (product.stock || 1)}
+                disabled={isOutOfStock || availableStock === 0 || qty >= availableStock}
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            <Button
-              size="lg"
-              onClick={handleAdd}
-              disabled={isOutOfStock}
-              className={`flex-1 ${
-                isOutOfStock
-                  ? "cursor-not-allowed bg-gray-400 text-gray-600 hover:bg-gray-400"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
-              }`}
-            >
-              <ShoppingBag className="mr-2 h-4 w-4" />
-              {isOutOfStock ? "Out of Stock" : "Add to cart"}
-            </Button>
+            <div className="flex flex-1 flex-col gap-2">
+              <Button
+                size="lg"
+                onClick={handleAdd}
+                disabled={isOutOfStock || availableStock === 0}
+                className={`flex-1 ${
+                  isOutOfStock || availableStock === 0
+                    ? "cursor-not-allowed bg-gray-400 text-gray-600 hover:bg-gray-400"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+              >
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                {isOutOfStock ? "Out of Stock" : availableStock === 0 ? "Cart is Full" : "Add to cart"}
+              </Button>
+              {cartQuantity > 0 && availableStock > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {cartQuantity} already in cart • {availableStock} available
+                </p>
+              )}
+            </div>
           </div>
 
           <ul className="mt-8 space-y-2 text-sm text-muted-foreground">
