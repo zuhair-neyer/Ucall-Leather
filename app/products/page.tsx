@@ -1,6 +1,9 @@
 import { fetchAllProducts } from "@/lib/products"
 import { ProductsView } from "./products-view"
 
+// Revalidate products page every 30 seconds to pick up new/updated products
+export const revalidate = 30
+
 export const metadata = {
   title: "Shop — UCALL Leather Co.",
   description: "Browse handcrafted leather bags, belts, wallets and jackets.",

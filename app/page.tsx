@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { ProductCard } from "@/components/site/product-card"
 import { fetchFeaturedProducts } from "@/lib/products"
 
+// Revalidate homepage every 30 seconds to pick up new/updated products
+export const revalidate = 30
+
 const categories = [
   { name: "Bags", image: "/category-bags.jpg", href: "/products?category=Bags" },
   { name: "Belts", image: "/category-belts.jpg", href: "/products?category=Belts" },

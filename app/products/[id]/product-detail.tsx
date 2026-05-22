@@ -17,8 +17,13 @@ export function ProductDetail({ product }: { product: Product }) {
   const [qty, setQty] = useState(1)
   const images = product.images?.length ? product.images : [product.image]
   const [active, setActive] = useState(0)
+  const isOutOfStock = product.stock === 0
 
   const handleAdd = () => {
+    if (isOutOfStock) {
+      toast.error("This product is out of stock")
+      return
+    }
     addItem(
       {
         id: product.id,
@@ -74,18 +79,26 @@ export function ProductDetail({ product }: { product: Product }) {
         <div>
           <span className="text-xs uppercase tracking-[0.3em] text-accent">{product.category}</span>
           <h1 className="mt-2 font-serif text-3xl text-primary sm:text-4xl">{product.name}</h1>
-          <p className="mt-3 text-2xl font-semibold text-primary">{formatINR(product.price)}</p>
+          <div className="mt-3 flex items-center gap-3">
+            <p className="text-2xl font-semibold text-primary">{formatINR(product.price)}</p>
+            {isOutOfStock && (
+              <span className="rounded-md bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+                Out of Stock
+              </span>
+            )}
+          </div>
           <p className="mt-6 leading-relaxed text-muted-foreground">{product.description}</p>
 
           <Separator className="my-8" />
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className={`flex flex-col gap-4 sm:flex-row sm:items-center ${isOutOfStock ? "opacity-50" : ""}`}>
             <div className="inline-flex items-center rounded-md border border-border">
               <button
                 type="button"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="p-3 hover:bg-secondary"
+                className="p-3 hover:bg-secondary disabled:opacity-50"
                 aria-label="Decrease quantity"
+                disabled={isOutOfStock}
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -93,8 +106,9 @@ export function ProductDetail({ product }: { product: Product }) {
               <button
                 type="button"
                 onClick={() => setQty((q) => q + 1)}
-                className="p-3 hover:bg-secondary"
+                className="p-3 hover:bg-secondary disabled:opacity-50"
                 aria-label="Increase quantity"
+                disabled={isOutOfStock}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -102,10 +116,15 @@ export function ProductDetail({ product }: { product: Product }) {
             <Button
               size="lg"
               onClick={handleAdd}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={isOutOfStock}
+              className={`flex-1 ${
+                isOutOfStock
+                  ? "cursor-not-allowed bg-gray-400 text-gray-600 hover:bg-gray-400"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
             >
               <ShoppingBag className="mr-2 h-4 w-4" />
-              Add to cart
+              {isOutOfStock ? "Out of Stock" : "Add to cart"}
             </Button>
           </div>
 
