@@ -45,12 +45,18 @@ export function ReviewsSection({ productId }: { productId: string }) {
     const q = query(
       collection(db, "reviews"),
       where("productId", "==", productId),
-      orderBy("createdAt", "desc"),
     )
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setReviews(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Review, "id">) })))
+        const reviewData = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Review, "id">) }))
+        // Sort by createdAt descending on client (no composite index needed)
+        reviewData.sort((a, b) => {
+          const aTime = a.createdAt?.seconds ?? 0
+          const bTime = b.createdAt?.seconds ?? 0
+          return bTime - aTime
+        })
+        setReviews(reviewData)
         setLoading(false)
       },
       (err) => {
