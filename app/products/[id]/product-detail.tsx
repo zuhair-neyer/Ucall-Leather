@@ -154,7 +154,7 @@ export function ProductDetail({ product: initialProduct }: { product: Product })
                 size="lg"
                 onClick={handleAdd}
                 disabled={isOutOfStock || availableStock === 0}
-                className={`flex-1 ${
+                className={`flex-1 h-14 sm:h-16 text-base sm:text-lg ${
                   isOutOfStock || availableStock === 0
                     ? "cursor-not-allowed bg-gray-400 text-gray-600 hover:bg-gray-400"
                     : "bg-primary text-primary-foreground hover:bg-primary/90"
