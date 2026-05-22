@@ -3,11 +3,12 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/auth-context"
+import { AuthAlert } from "@/components/auth-alert"
+import { getFriendlyAuthError, validateAuthForm } from "@/lib/auth-errors"
 
 export default function RegisterPage() {
   const { register, isConfigured } = useAuth()
@@ -16,31 +17,61 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    setSuccess(false)
+
+    // Validate form inputs
+    const validationError = validateAuthForm(
+      { email, password, name },
+      "register"
+    )
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     if (!isConfigured) {
-      toast.error("Firebase is not configured yet.")
+      setError("Sign up service is unavailable. Please try again later.")
       return
     }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.")
-      return
-    }
+
     setLoading(true)
     try {
       await register(name, email, password)
-      toast.success("Account created. Welcome to UCALL.")
-      router.push("/")
+      setSuccess(true)
+      setError(null)
+      setTimeout(() => {
+        router.push("/")
+      }, 1000)
     } catch (err: any) {
-      toast.error(err?.message ?? "Registration failed.")
-      setLoading(false)  // ← sirf catch mein rakhna
+      const friendlyError = getFriendlyAuthError(err)
+      setError(friendlyError)
+      setLoading(false)
+      console.log("[v0] Registration error:", err?.code || err?.message)
     }
   }
-  // finally block hatao completely
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-12">
+      {error && (
+        <AuthAlert
+          message={error}
+          type="error"
+          onClose={() => setError(null)}
+        />
+      )}
+      {success && (
+        <AuthAlert
+          message="Account created! Redirecting..."
+          type="success"
+          autoClose={false}
+        />
+      )}
       <div className="rounded-lg border border-border bg-card p-8 shadow-sm">
         <h1 className="font-serif text-3xl text-primary">Create your account</h1>
         <p className="mt-1 text-sm text-muted-foreground">Join UCALL to shop and track orders.</p>
@@ -51,8 +82,9 @@ export default function RegisterPage() {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
               className="mt-1"
+              disabled={loading}
+              autoComplete="name"
             />
           </div>
           <div>
@@ -62,8 +94,9 @@ export default function RegisterPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
               className="mt-1"
+              disabled={loading}
+              autoComplete="email"
             />
           </div>
           <div>
@@ -73,10 +106,14 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
               minLength={6}
               className="mt-1"
+              disabled={loading}
+              autoComplete="new-password"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              At least 6 characters
+            </p>
           </div>
           <Button
             type="submit"
