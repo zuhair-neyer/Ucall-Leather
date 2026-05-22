@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Minus, Plus, Trash2, ShoppingBag, Check, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, increment, onSnapshot } from "firebase/firestore"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { SavedAddress } from "@/lib/address"
 
 import { Button } from "@/components/ui/button"
