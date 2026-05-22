@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState } from "react"
 import { Minus, Plus, Trash2, ShoppingBag, Check } from "lucide-react"
 import { toast } from "sonner"
-import { addDoc, collection, serverTimestamp, doc, getDoc } from "firebase/firestore"
+import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, increment } from "firebase/firestore"
 import { useEffect } from "react"
 import { SavedAddress } from "@/lib/address"
 
@@ -148,6 +148,7 @@ export function CartView() {
         if (!db)
           throw new Error("Firestore not configured")
 
+        // Create order document
         await addDoc(collection(db, "orders"), {
           userId: user.uid,
           userEmail: user.email,
@@ -173,6 +174,14 @@ export function CartView() {
 
           createdAt: serverTimestamp(),
         })
+
+        // Reduce stock for each product in order
+        for (const item of items) {
+          const productRef = doc(db, "products", item.id)
+          await updateDoc(productRef, {
+            stock: increment(-item.quantity),
+          })
+        }
 
         clearCart()
 
@@ -258,6 +267,7 @@ export function CartView() {
                 "Firestore not configured"
               )
 
+            // Create order document
             await addDoc(collection(db, "orders"), {
               userId: user.uid,
               userEmail: user.email,
@@ -292,6 +302,14 @@ export function CartView() {
 
               createdAt: serverTimestamp(),
             })
+
+            // Reduce stock for each product in order
+            for (const item of items) {
+              const productRef = doc(db, "products", item.id)
+              await updateDoc(productRef, {
+                stock: increment(-item.quantity),
+              })
+            }
 
             clearCart()
 
