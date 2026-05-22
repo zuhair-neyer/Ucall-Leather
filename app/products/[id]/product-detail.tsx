@@ -105,10 +105,10 @@ export function ProductDetail({ product }: { product: Product }) {
               <span className="min-w-10 text-center font-medium">{qty}</span>
               <button
                 type="button"
-                onClick={() => setQty((q) => q + 1)}
+                onClick={() => setQty((q) => Math.min(q + 1, product.stock || 1))}
                 className="p-3 hover:bg-secondary disabled:opacity-50"
                 aria-label="Increase quantity"
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || qty >= (product.stock || 1)}
               >
                 <Plus className="h-4 w-4" />
               </button>
