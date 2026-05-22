@@ -3,10 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
-import { Minus, Plus, Trash2, ShoppingBag, Check } from "lucide-react"
+import { Minus, Plus, Trash2, ShoppingBag, Check, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, increment } from "firebase/firestore"
-import { useEffect } from "react"
+import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, increment, onSnapshot } from "firebase/firestore"
+import { useEffect, useState } from "react"
 import { SavedAddress } from "@/lib/address"
 
 import { Button } from "@/components/ui/button"
@@ -55,6 +55,9 @@ export function CartView() {
 
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  
+  // Track real-time stock for all cart items
+  const [productStocks, setProductStocks] = useState<Record<string, number>>({})
 
   const [form, setForm] = useState({
     name: "",
@@ -98,6 +101,33 @@ export function CartView() {
 
     fetchAddresses()
   }, [user, db, profile])
+
+  // Real-time listeners for product stock in cart
+  useEffect(() => {
+    if (!db || items.length === 0) return
+
+    const unsubscribers: (() => void)[] = []
+
+    items.forEach((item) => {
+      const unsubscribe = onSnapshot(
+        doc(db, "products", item.id),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const stock = docSnap.data().stock ?? 0
+            setProductStocks((prev) => ({ ...prev, [item.id]: stock }))
+          }
+        },
+        (error) => {
+          console.log("[v0] Error listening to product stock:", error)
+        }
+      )
+      unsubscribers.push(unsubscribe)
+    })
+
+    return () => {
+      unsubscribers.forEach((unsub) => unsub())
+    }
+  }, [items, db])
 
   const handleSelectAddress = (addr: SavedAddress) => {
     setForm({
@@ -375,10 +405,14 @@ export function CartView() {
       {/* ITEMS */}
       <div className="space-y-6 sm:space-y-8">
         <div className="space-y-3 sm:space-y-4">
-          {items.map((item) => (
+          {items.map((item) => {
+            const isOutOfStock = productStocks[item.id] === 0
+            return (
             <div
               key={item.id}
-              className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 rounded-lg border border-border bg-card p-3 sm:p-4"
+              className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 rounded-lg border transition-colors ${
+                isOutOfStock ? "border-red-200 bg-red-50" : "border-border bg-card"
+              } p-3 sm:p-4`}
             >
               <div className="relative h-24 w-24 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-md bg-muted">
                 <Image
@@ -388,25 +422,35 @@ export function CartView() {
                   alt={item.name}
                   fill
                   sizes="96px"
-                  className="object-cover"
+                  className={`object-cover ${isOutOfStock ? "grayscale opacity-50" : ""}`}
                 />
               </div>
 
               <div className="flex-1 min-w-0">
-                <Link
-                  href={`/products/${item.id}`}
-                  className="font-serif text-base sm:text-lg text-foreground hover:text-accent line-clamp-2"
-                >
-                  {item.name}
-                </Link>
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Link
+                      href={`/products/${item.id}`}
+                      className="font-serif text-base sm:text-lg text-foreground hover:text-accent line-clamp-2"
+                    >
+                      {item.name}
+                    </Link>
 
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
-                  {item.category}
-                </p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mt-0.5">
+                      {item.category}
+                    </p>
 
-                <p className="mt-1 text-sm sm:text-base font-medium text-primary">
-                  {formatINR(item.price)}
-                </p>
+                    <p className="mt-1 text-sm sm:text-base font-medium text-primary">
+                      {formatINR(item.price)}
+                    </p>
+                  </div>
+                  {isOutOfStock && (
+                    <div className="flex items-center gap-1 rounded-md bg-red-100 px-2 py-1 whitespace-nowrap">
+                      <AlertCircle className="h-3.5 w-3.5 text-red-700" />
+                      <span className="text-xs font-semibold text-red-700">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -454,7 +498,8 @@ export function CartView() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* SHIPPING */}

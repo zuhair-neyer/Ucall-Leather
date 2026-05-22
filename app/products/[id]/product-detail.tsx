@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ShoppingBag, Minus, Plus, ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -11,13 +11,36 @@ import { useCart } from "@/context/cart-context"
 import { formatINR } from "@/lib/format"
 import type { Product } from "@/lib/products"
 import { ReviewsSection } from "./reviews-section"
+import { doc, onSnapshot } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
-export function ProductDetail({ product }: { product: Product }) {
+export function ProductDetail({ product: initialProduct }: { product: Product }) {
   const { addItem, items } = useCart()
+  const [product, setProduct] = useState(initialProduct)
   const [qty, setQty] = useState(1)
   const images = product.images?.length ? product.images : [product.image]
   const [active, setActive] = useState(0)
   const isOutOfStock = product.stock === 0
+
+  // Real-time listener for stock changes
+  useEffect(() => {
+    if (!db || !product?.id) return
+
+    const unsubscribe = onSnapshot(
+      doc(db, "products", product.id),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const updatedProduct = { id: docSnap.id, ...docSnap.data() } as Product
+          setProduct(updatedProduct)
+        }
+      },
+      (error) => {
+        console.log("[v0] Product listener error:", error)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [product?.id])
 
   // Calculate how much of this product is already in cart
   const cartQuantity = items.find((item) => item.id === product.id)?.quantity ?? 0
@@ -138,11 +161,11 @@ export function ProductDetail({ product }: { product: Product }) {
                 }`}
               >
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                {isOutOfStock ? "Out of Stock" : availableStock === 0 ? "Cart is Full" : "Add to cart"}
+                {isOutOfStock ? "Out of Stock" : availableStock === 0 ? "0 Left" : "Add to cart"}
               </Button>
-              {cartQuantity > 0 && availableStock > 0 && (
+              {availableStock > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {cartQuantity} already in cart • {availableStock} available
+                  {availableStock} left in stock{cartQuantity > 0 ? ` • ${cartQuantity} in your cart` : ""}
                 </p>
               )}
             </div>
