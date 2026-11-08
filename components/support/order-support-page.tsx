@@ -21,7 +21,7 @@ const choices = [
   { action: "cancel_return", label: "Cancellation, returns & refunds", icon: RotateCcw },
   { action: "chat_to_agent", label: "Chat to agent", icon: MessageCircle },
 ] as const
-type SupportAction = typeof choices[number]["action"] | "start_assistant"
+type SupportAction = typeof choices[number]["action"] | "request_agent"
 
 export function OrderSupportPage({ orderId }: { orderId: string }) {
   const { user, isAdmin, loading: authLoading, isConfigured } = useAuth()
@@ -36,7 +36,6 @@ export function OrderSupportPage({ orderId }: { orderId: string }) {
   const [busy, setBusy] = useState<SupportAction | "">("")
   const [retry, setRetry] = useState(0)
   const requestIds = useRef<Partial<Record<SupportAction, string>>>({})
-  const starting = useRef(false)
   const validId = /^[a-zA-Z0-9_-]{1,120}$/.test(orderId)
 
   useEffect(() => {
@@ -53,7 +52,6 @@ export function OrderSupportPage({ orderId }: { orderId: string }) {
     setReply("")
     setActionError("")
     requestIds.current = {}
-    starting.current = false
     const stopOrder = onSnapshot(doc(db, "orders", orderId), snapshot => {
       const next = snapshot.exists() ? normalizeOrder(snapshot.data(), snapshot.id) : null
       setOrder(next?.userId === user.uid ? next : null)
@@ -65,16 +63,6 @@ export function OrderSupportPage({ orderId }: { orderId: string }) {
     }, () => { setLoadError("Your conversation could not load. Check your connection and try again."); setThreadLoading(false) })
     return () => { stopOrder(); stopThread() }
   }, [user, authLoading, isAdmin, isConfigured, validId, orderId, retry])
-
-  useEffect(() => {
-    if (!user || authLoading || isAdmin || !order || order.userId !== user.uid || orderLoading || threadLoading || thread || loadError || starting.current) return
-    starting.current = true
-    requestIds.current.start_assistant ??= crypto.randomUUID()
-    setBusy("start_assistant")
-    void apiRequest(user, `/api/orders/${orderId}/support`, { action: "start_assistant", requestId: requestIds.current.start_assistant })
-      .catch(error => setActionError(error instanceof Error ? error.message : "Support could not start. Please try again."))
-      .finally(() => setBusy(""))
-  }, [user, authLoading, isAdmin, order, orderLoading, threadLoading, thread, loadError, orderId])
 
   async function selectAction(action: SupportAction) {
     if (!user || busy) return
@@ -105,11 +93,11 @@ export function OrderSupportPage({ orderId }: { orderId: string }) {
       {reply && <p role="status" className="rounded-lg border border-border bg-secondary p-4 text-sm leading-relaxed">{reply}</p>}
       </aside>
       <section aria-label="Chat with UCALL" className="journey-panel journey-chat-shell min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
-        <div className="journey-chat-header mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-serif text-xl text-primary">Chat with UCALL</h2><span className="rounded-full bg-secondary px-3 py-1 text-xs text-primary">{thread?.status === "closed" ? "Closed conversation" : thread?.mode === "assistant" ? "AI assistant" : "UCALL team"}</span></div>
-        <p className="mb-4 text-xs leading-relaxed text-muted-foreground">{thread?.mode === "assistant" ? "Our AI assistant can answer order questions. If you still need help, we’ll transfer this conversation to our team. You can choose Chat to agent at any time." : "Our team replies here when available. You can leave this page and return to the same conversation from your orders."}</p>
-        {actionError && <div role="alert" className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><p>{actionError}</p>{!thread && <Button variant="outline" className="mt-3 min-h-11" disabled={Boolean(busy)} onClick={() => void selectAction("start_assistant")}>Retry support</Button>}</div>}
-        {thread ? <ChatConversation key={`${user.uid}:${thread.orderId}`} thread={thread} viewerRole="customer" fullPage /> : !actionError && <p role="status" className="py-12 text-center text-sm text-muted-foreground">Starting your conversation…</p>}
-        {thread?.mode === "assistant" && thread.status === "open" && <Button type="button" variant="link" className="mt-2 h-auto min-h-11 whitespace-normal px-0 text-left" disabled={Boolean(busy)} onClick={() => void selectAction("chat_to_agent")}>I still need help — transfer to the team</Button>}
+        <div className="journey-chat-header mb-3 flex flex-wrap items-center justify-between gap-2"><h2 className="font-serif text-xl text-primary">Chat with UCALL</h2><span className="rounded-full bg-secondary px-3 py-1 text-xs text-primary">{!thread ? "Order support" : thread.status === "closed" ? "Closed conversation" : thread.mode === "assistant" ? "AI assistant" : "UCALL team"}</span></div>
+        <p className="mb-4 text-xs leading-relaxed text-muted-foreground">{!thread || thread.mode === "assistant" ? "Chat to agent starts with our AI assistant. If it cannot resolve your issue, the conversation passes to our team. You can also choose Transfer to the team." : "Our team replies here when available. You can leave this page and return to the same conversation from your orders."}</p>
+        {actionError && <div role="alert" className="mb-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><p>{actionError}</p>{!thread && <Button variant="outline" className="mt-3 min-h-11" disabled={Boolean(busy)} onClick={() => void selectAction("chat_to_agent")}>Retry support</Button>}</div>}
+        {thread ? <ChatConversation key={`${user.uid}:${thread.orderId}`} thread={thread} viewerRole="customer" fullPage /> : !actionError && <p role="status" className="py-12 text-center text-sm text-muted-foreground">{busy === "chat_to_agent" ? "Starting your conversation…" : "Choose Chat to agent to start a conversation."}</p>}
+        {thread?.mode === "assistant" && thread.status === "open" && <Button type="button" variant="link" className="mt-2 h-auto min-h-11 whitespace-normal px-0 text-left" disabled={Boolean(busy)} onClick={() => void selectAction("request_agent")}>I still need help — transfer to the team</Button>}
       </section>
     </div>
   </div>

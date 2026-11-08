@@ -141,6 +141,9 @@ test("support opens as a page, prioritises delivery and shares private photos wi
     await expect(page).toHaveURL(/\/orders\/qa-support-order\/support$/)
     await expect(page.getByRole("dialog")).toHaveCount(0)
     await expect(page.getByRole("heading", { name: "Order support" })).toBeVisible()
+    await expect(page.getByText("Choose Chat to agent to start a conversation.", { exact: true })).toBeVisible()
+    expect((await database.collection("supportThreads").doc("qa-support-order").get()).exists).toBe(false)
+    await page.getByRole("button", { name: "Chat to agent", exact: true }).click()
     await expect(page.getByRole("log")).toContainText("Our AI assistant is unavailable right now")
     await page.getByRole("button", { name: "Where is my order?", exact: true }).click()
     await expect(page.getByRole("status")).toContainText("pending")
@@ -169,6 +172,8 @@ test("support opens as a page, prioritises delivery and shares private photos wi
     await expect(owner.getByText("0 unread", { exact: true })).toBeVisible()
     await owner.getByLabel("Reply to customer", { exact: true }).fill("Your order is prioritised. We are arranging dispatch.")
     await page.getByRole("link", { name: "Back to order", exact: true }).click()
+    await expect(page).toHaveURL(/\/orders\/qa-support-order$/)
+    await expect(page.getByRole("log")).toHaveCount(0)
     await owner.getByRole("button", { name: "Send reply", exact: true }).click()
     await expect(page.getByRole("link", { name: "Get support, new reply", exact: true })).toBeVisible()
     await page.getByRole("link", { name: "Get support, new reply", exact: true }).click()
@@ -204,6 +209,31 @@ test("support opens as a page, prioritises delivery and shares private photos wi
     await expect(page.getByRole("button", { name: "Send message", exact: true })).toBeVisible()
     await expect(page.getByRole("log")).toContainText("Your order is prioritised. We are arranging dispatch.")
   } finally { await ownerContext.close() }
+})
+
+test("Chat to agent keeps AI active until the customer explicitly transfers to the team", async ({ page }) => {
+  await seedOrder("qa-ai-support")
+  const ref = database.collection("supportThreads").doc("qa-ai-support")
+  const now = Timestamp.now()
+  await ref.set({
+    orderId: "qa-ai-support", userId: "buyer", userName: "Browser Buyer", userEmail: buyerEmail,
+    status: "open", mode: "assistant", assistantTurns: 1, handoffReason: "",
+    aiPendingMessageId: null, aiLeaseUntil: null, unreadByAdmin: false, unreadByCustomer: true,
+    lastMessage: "Your order is pending.", lastMessageId: "ai-reply", lastMessageAt: now, createdAt: now, updatedAt: now,
+  })
+  await ref.collection("messages").doc("ai-reply").set({ text: "Your order is pending.", senderRole: "assistant", senderId: "assistant", createdAt: now })
+  await signIn(page, buyerEmail, "/orders/qa-ai-support/support")
+  await expect(page.getByRole("log")).toContainText("UCALL AI assistant")
+  const actionResponse = page.waitForResponse(response => response.url().endsWith("/api/orders/qa-ai-support/support") && response.request().method() === "POST")
+  await page.getByRole("button", { name: "Chat to agent", exact: true }).click()
+  expect((await actionResponse).status()).toBe(200)
+  expect((await ref.get()).data()?.mode).toBe("assistant")
+  expect((await ref.get()).data()?.assistantTurns).toBe(1)
+  await page.getByRole("button", { name: "I still need help — transfer to the team", exact: true }).click()
+  await expect.poll(async () => (await ref.get()).data()?.mode).toBe("agent")
+  expect((await ref.get()).data()?.unreadByAdmin).toBe(true)
+  await expect(page.getByRole("log")).toContainText("UCALL team will reply here when available")
+  await expect(page.getByRole("button", { name: "I still need help — transfer to the team", exact: true })).toHaveCount(0)
 })
 
 test("owner dashboard, product image links and product changes; stale admins denied", async ({ page }, testInfo) => {

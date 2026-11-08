@@ -119,18 +119,59 @@ test("AI replies are idempotent, bounded, and unresolved requests transfer with 
   let calls = 0
   global.fetch = async () => { calls++; return Response.json({ choices: [{ finish_reason: "stop", message: { role: "assistant", content: JSON.stringify({ intent: "order_status" }) } }] }) }
   try {
-    await performSupportAction(orderId, actor, { action: "start_assistant", requestId: randomUUID() })
+    const start = action("chat_to_agent")
+    await Promise.all([performSupportAction(orderId, actor, start), performSupportAction(orderId, actor, start)])
     const input = { message: "Where is it?", requestId: randomUUID() }
     await Promise.all([sendSupportMessage(orderId, actor, input), sendSupportMessage(orderId, actor, input)])
     assert.equal(calls, 1)
     const ref = getAdminDb().collection("supportThreads").doc(orderId)
     assert.equal((await ref.collection("messages").get()).size, 3)
     assert.equal((await ref.get()).data()!.mode, "assistant")
+    await performSupportAction(orderId, actor, action("chat_to_agent"))
+    assert.equal((await ref.get()).data()!.mode, "assistant")
+    assert.equal((await ref.get()).data()!.assistantTurns, 1)
+    assert.equal((await ref.collection("messages").get()).size, 3)
     await sendSupportMessage(orderId, actor, { message: "This is not resolved", requestId: randomUUID() })
     assert.equal(calls, 1)
     assert.equal((await ref.get()).data()!.mode, "agent")
     assert.equal((await ref.get()).data()!.handoffReason, "customer_requested")
     assert.equal((await ref.collection("messages").get()).size, 5)
+    assert.equal((await ref.get()).data()!.unreadByAdmin, true)
+    await sendSupportMessage(orderId, actor, { message: "Any update?", requestId: randomUUID() })
+    await sendSupportMessage(orderId, admin, { message: "I’m arranging dispatch now.", requestId: randomUUID() })
+    const continuing = await performSupportAction(orderId, actor, action("chat_to_agent"))
+    assert.match(continuing.reply, /already with the UCALL team/)
+    assert.equal((await ref.get()).data()!.mode, "agent")
+    assert.equal((await ref.get()).data()!.unreadByCustomer, true)
+    assert.equal(calls, 1, "AI stays silent after handoff and admin reply")
+  } finally { global.fetch = fetch; if (key === undefined) delete process.env.GROQ_API_KEY; else process.env.GROQ_API_KEY = key }
+})
+
+test("explicit human transfer stops an in-flight AI reply and reopening a closed chat starts with AI", async () => {
+  const fetch = global.fetch, key = process.env.GROQ_API_KEY
+  process.env.GROQ_API_KEY = "test-only-placeholder"
+  let finish!: (value: Response) => void, started!: () => void
+  const pending = new Promise<void>(resolve => { started = resolve })
+  global.fetch = () => { started(); return new Promise<Response>(resolve => { finish = resolve }) }
+  try {
+    await performSupportAction(orderId, actor, action("chat_to_agent"))
+    const sending = sendSupportMessage(orderId, actor, { message: "Where is it?", requestId: randomUUID() })
+    await pending
+    await performSupportAction(orderId, actor, { action: "request_agent", requestId: randomUUID() })
+    finish(Response.json({ choices: [{ finish_reason: "stop", message: { role: "assistant", content: JSON.stringify({ intent: "order_status" }) } }] }))
+    await sending
+    const ref = getAdminDb().collection("supportThreads").doc(orderId)
+    assert.equal((await ref.get()).data()!.mode, "agent")
+    assert.equal((await ref.get()).data()!.handoffReason, "customer_requested")
+    assert.equal((await ref.get()).data()!.unreadByAdmin, true)
+    assert.equal((await ref.collection("messages").get()).docs.some(doc => doc.data().senderRole === "assistant"), false)
+    await setSupportStatus(orderId, "closed")
+    await performSupportAction(orderId, actor, action("chat_to_agent"))
+    assert.equal((await ref.get()).data()!.mode, "assistant")
+    assert.equal((await ref.get()).data()!.assistantTurns, 0)
+    assert.equal((await ref.get()).data()!.unreadByAdmin, false)
+    assert.equal((await ref.get()).data()!.aiPendingMessageId, null)
+    assert.ok((await ref.collection("messages").get()).size > 3, "Reopening preserves the conversation history")
   } finally { global.fetch = fetch; if (key === undefined) delete process.env.GROQ_API_KEY; else process.env.GROQ_API_KEY = key }
 })
 

@@ -11,7 +11,8 @@ import { assistantConfigured, generateSupportReply, handoffReply, MAX_ASSISTANT_
 import type { SupportAttachment } from "./support-photos"
 
 export const supportActionSchema = z.object({
-  action: z.enum(["where_is_order", "faster_delivery", "delivery_details", "cancel_return", "chat_to_agent", "start_assistant"]),
+  // "Chat to agent" starts AI support; only request_agent explicitly asks for a human.
+  action: z.enum(["where_is_order", "faster_delivery", "delivery_details", "cancel_return", "chat_to_agent", "start_assistant", "request_agent"]),
   requestId: z.uuid(),
 }).strict()
 export const supportMessageSchema = z.object({
@@ -43,8 +44,8 @@ export function supportReply(rawOrder: StoreOrder, action: SupportAction) {
   if (action === "cancel_return") return order.status === "pending"
     ? "You can cancel a pending order using Cancel order in your order details. For other help, choose Chat to agent."
     : `For cancellation, returns or refunds, choose Chat to agent. Return requests should be made within ${RETURN_WINDOW_DAYS} days of delivery, subject to our refund policy. Please do not send an item back before the team confirms the return.`
-  if (action === "start_assistant") return assistantConfigured()
-    ? "Hi, I’m UCALL’s AI support assistant. Tell me what you need help with. If I cannot resolve it, I’ll pass this conversation to our team. You can choose Chat to agent at any time."
+  if (action === "chat_to_agent" || action === "start_assistant") return assistantConfigured()
+    ? "Hi, I’m UCALL’s AI support assistant. Tell me what you need help with. If I cannot resolve it, I’ll pass this conversation to our team. You can also choose Transfer to the team."
     : "Our AI assistant is unavailable right now. " + handoffReply
   return "Your chat request has been sent. Leave your message below; the UCALL team will reply here when available."
 }
@@ -59,7 +60,7 @@ export async function performSupportAction(orderId: string, actor: SupportActor,
       if (["cancelled", "delivered"].includes(order!.status)) throw new HttpError(409, "This order is already complete and cannot be prioritised. Choose Chat to agent for help")
       if (order!.priority !== "prioritised") tx.update(orderRef, { priority: "prioritised", prioritisedAt: now, updatedAt: now })
     }
-    if (input.action === "chat_to_agent" || input.action === "start_assistant") {
+    if (input.action === "chat_to_agent" || input.action === "start_assistant" || input.action === "request_agent") {
       const messageId = messageKey(actor, input.requestId), messageRef = threadRef.collection("messages").doc(messageId)
       const requestRef = threadRef.collection("requests").doc(messageId)
       const [thread, previous] = await tx.getAll(threadRef, requestRef)
@@ -69,17 +70,19 @@ export async function performSupportAction(orderId: string, actor: SupportActor,
       }
       tx.create(requestRef, { action: input.action, createdAt: now })
       // Repeated clicks on an open chat reuse it without filling the inbox with notices.
-      if (!thread.exists || thread.data()?.status === "closed" || (input.action === "chat_to_agent" && thread.data()?.mode === "assistant")) {
-        const mode = input.action === "start_assistant" && assistantConfigured() ? "assistant" : "agent"
+      if (!thread.exists || thread.data()?.status === "closed" || (input.action === "request_agent" && thread.data()?.mode === "assistant")) {
+        const mode = input.action !== "request_agent" && assistantConfigured() ? "assistant" : "agent"
         tx.set(threadRef, {
           orderId, userId: order!.userId, userName: order!.userName || order!.shippingAddress?.name || "Customer", userEmail: order!.userEmail || order!.shippingAddress?.email || "",
           status: "open", lastMessage: reply, lastMessageId: messageId, lastMessageAt: now, updatedAt: now,
           mode, assistantTurns: 0, aiPendingMessageId: null, aiLeaseUntil: null,
-          handoffReason: mode === "agent" ? (input.action === "chat_to_agent" ? "customer_requested" : "assistant_unavailable") : "",
+          handoffReason: mode === "agent" ? (input.action === "request_agent" ? "customer_requested" : "assistant_unavailable") : "",
           unreadByAdmin: mode === "agent", unreadByCustomer: false,
           ...(!thread.exists ? { createdAt: now } : {}),
         }, { merge: true })
         tx.create(messageRef, { text: reply, senderRole: "system", senderId: actor.uid, action: input.action, createdAt: now })
+      } else if (thread.data()?.mode !== "assistant") {
+        return { reply: "Your conversation is already with the UCALL team. Your messages and photos are saved here, and an agent will reply when available." }
       }
     }
     return { reply }
