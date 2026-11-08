@@ -8,6 +8,8 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@grpc/grpc-js@1.14.7'
 overrides:
+  # 4.x requires ESM-only jose; keep Firebase Admin loadable without Node's require(esm).
+  'firebase-admin>jwks-rsa': 3.2.2
   # google-gax/gaxios use the compatible rimraf API; 6.x removes vulnerable glob/minimatch dependencies.
   'rimraf@5.0.10': 6.1.4
   '@grpc/grpc-js': 1.14.7
