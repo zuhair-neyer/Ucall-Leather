@@ -10,7 +10,7 @@ test("public pages render with no runtime errors or horizontal overflow", async 
   const errors: string[] = []
   page.on("pageerror", error => errors.push(error.message))
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()) })
-  const routes = ["/", "/products", "/cart", "/about", "/contact", "/privacy-policy", "/terms", "/refund-policy", "/shipping-policy", "/login", "/register", "/forgot-password"]
+  const routes = ["/", "/products", "/cart", "/about", "/contact", "/privacy-policy", "/terms", "/refund-policy", "/shipping-policy", "/login", "/register", "/forgot-password", "/reset-password"]
   for (const route of routes) {
     const response = await page.goto(route)
     expect(response?.status(), route).toBe(200)

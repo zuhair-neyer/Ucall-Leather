@@ -28,7 +28,7 @@ Object.assign(process.env, environment)
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "authenticated.spec.ts",
+  testMatch: ["authenticated.spec.ts", "password-reset.spec.ts"],
   grep: process.env.E2E_TEST_GREP ? new RegExp(process.env.E2E_TEST_GREP) : undefined,
   fullyParallel: false,
   workers: 1,

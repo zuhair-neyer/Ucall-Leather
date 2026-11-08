@@ -26,6 +26,16 @@ test-results/
 playwright-report/
 playwright-emulator-report/
 
+# Project documentation and generated QA artifacts are kept out of publication.
+/README.md
+/CHANGELOG.md
+/docs/
+/output/
+/tmp/
+/qa-*.json
+/audit-*.json
+*.log
+
 # Common ignores
 node_modules
 .next/

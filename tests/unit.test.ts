@@ -6,10 +6,44 @@ import { shippingFor } from "../lib/config"
 import { hasAdminAccess } from "../lib/admin-access"
 import { validSignature } from "../lib/server/razorpay"
 import { getFriendlyAuthError } from "../lib/auth-errors"
+import { passwordPolicyError, passwordResetError, readPasswordResetLink, validateResetPassword } from "../lib/password-reset"
+import type { PasswordValidationStatus } from "firebase/auth"
 import { POST as webhook } from "../app/api/razorpay/webhook/route"
 import { POST as checkout } from "../app/api/checkout/route"
 const address = { name: "Test Customer", email: "customer@example.com", phone: "9335228107", address: "600 C Block", city: "Kanpur", state: "Uttar Pradesh", pincode: "208010" }
 const request = { items: [{ id: "belt", quantity: 1 }], address, paymentMethod: "cod" }
+test("password reset keeps passwords exact and maps terminal and retryable failures", () => {
+  assert.deepEqual(validateResetPassword(" leading and trailing ", " leading and trailing "), {})
+  assert.ok(validateResetPassword(" leading and trailing ", "leading and trailing").confirmation)
+  assert.ok(validateResetPassword("12345", "12345").password)
+  assert.ok(validateResetPassword("x".repeat(4097), "x".repeat(4097)).password)
+  assert.equal(passwordResetError({ code: "auth/expired-action-code" }).invalidLink, true)
+  assert.equal(passwordResetError({ code: "auth/invalid-action-code" }).invalidLink, true)
+  assert.equal(passwordResetError({ code: "auth/network-request-failed" }).invalidLink, false)
+  assert.equal(passwordResetError({ code: "auth/weak-password" }).invalidLink, false)
+})
+test("password reset honours the configured password policy", () => {
+  const result = { isValid: false, meetsMinPasswordLength: false, containsUppercaseLetter: false, containsNumericCharacter: false, passwordPolicy: { customStrengthOptions: { minPasswordLength: 12 } } } as PasswordValidationStatus
+  assert.match(passwordPolicyError(result)!, /at least 12 characters, an uppercase letter, a number/)
+  assert.equal(passwordPolicyError({ ...result, isValid: true }), null)
+})
+test("Firebase action routing pins the app and rejects untrusted destinations", () => {
+  const config = { apiKey: "test-key", projectId: "demo-ucall", siteUrl: "https://store.example" }
+  assert.deepEqual(readPasswordResetLink(new URLSearchParams("oobCode=abc"), config), { kind: "reset", code: "abc" })
+  for (const query of ["oobCode=abc&apiKey=wrong", "oobCode=abc&oobCode=def", "oobCode=abc&mode=resetPassword&mode=verifyEmail", "oobCode=abc&mode=https://untrusted.example"]) {
+    assert.equal(readPasswordResetLink(new URLSearchParams(query), config).kind, "invalid")
+  }
+  for (const mode of ["verifyEmail", "recoverEmail", "verifyAndChangeEmail", "revertSecondFactorAddition", "signIn"]) {
+    const result = readPasswordResetLink(new URLSearchParams({ mode, oobCode: "abc", continueUrl: "https://untrusted.example", lang: "en" }), config)
+    assert.equal(result.kind, "hosted")
+    if (result.kind !== "hosted") continue
+    const url = new URL(result.url)
+    assert.equal(url.origin, "https://demo-ucall.firebaseapp.com")
+    assert.equal(url.searchParams.get("apiKey"), config.apiKey)
+    assert.equal(url.searchParams.get("mode"), mode)
+    assert.equal(url.searchParams.has("continueUrl"), false)
+  }
+})
 test("checkout rejects browser prices, totals, duplicate items and invalid quantities", () => {
   assert.equal(checkoutSchema.safeParse(request).success, true)
   for (const input of [ { ...request, total: 1 }, { ...request, items: [{ id: "belt", quantity: 1, price: 1 }] }, { ...request, items: [{ id: "belt", quantity: 1 }, { id: "belt", quantity: 1 }] }, ...[0, -1, 11, 1.5].map(quantity => ({ ...request, items: [{ id: "belt", quantity }] })) ]) assert.equal(checkoutSchema.safeParse(input).success, false)
