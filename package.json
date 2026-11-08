@@ -15,6 +15,7 @@
     "test": "tsx --conditions=react-server --test tests/unit.test.ts tests/product-images.test.ts tests/order-normalization.test.ts tests/billing.test.ts tests/support-ai.test.ts tests/support-scope.test.ts tests/email-transport.test.ts",
     "test:emulators": "firebase emulators:exec --only firestore,storage --project demo-ucall \"tsx --conditions=react-server --test --test-concurrency=1 tests/rules.test.ts tests/checkout.test.ts tests/support.test.ts tests/support-rules.test.ts tests/email.test.ts\"",
     "email:retry": "tsx --conditions=react-server scripts/retry-emails.ts",
+    "support:check": "tsx --conditions=react-server scripts/check-support-ai.ts",
     "images:optimize": "node scripts/optimize-images.mjs",
     "test:browser": "playwright test"
   },
