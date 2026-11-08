@@ -1,0 +1,15 @@
+allowBuilds:
+  '@firebase/util': true
+  protobufjs: true
+  sharp: true
+  esbuild: true
+  re2: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@grpc/grpc-js@1.14.7'
+overrides:
+  # google-gax/gaxios use the compatible rimraf API; 6.x removes vulnerable glob/minimatch dependencies.
+  'rimraf@5.0.10': 6.1.4
+  '@grpc/grpc-js': 1.14.7
+  browserslist: 4.29.5
+  baseline-browser-mapping: 2.11.34

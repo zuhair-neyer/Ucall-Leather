@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && request.auth.token.email is string
+        && request.auth.token.email.lower() == 'roasterssunday@gmail.com'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function text(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+    function validAddress(a) {
+      return a is map && a.keys().hasOnly(['id','label','street','city','state','pincode','phone','isDefault'])
+        && text(a.id, 1, 100) && a.label in ['Home','Work','Other'] && text(a.street, 5, 500)
+        && text(a.city, 2, 100) && text(a.state, 2, 100)
+        && a.pincode is string && a.pincode.matches('^[1-9][0-9]{5}$')
+        && a.phone is string && a.phone.matches('^[6-9][0-9]{9}$')
+        && (!('isDefault' in a) || a.isDefault is bool);
+    }
+    function addressesValid(a) {
+      return a is list && a.size() <= 3 && (a.size() < 1 || validAddress(a[0]))
+        && (a.size() < 2 || validAddress(a[1])) && (a.size() < 3 || validAddress(a[2]));
+    }
+    function validUser(d) {
+      return d.keys().hasOnly(['uid','name','email','role','addresses','wishlist','createdAt'])
+        && d.uid == request.auth.uid && text(d.name, 2, 100)
+        && d.email == request.auth.token.email && d.role in ['user','admin']
+        && d.createdAt is timestamp
+        && (!('addresses' in d) || addressesValid(d.addresses))
+        && (!('wishlist' in d) || (d.wishlist is list && d.wishlist.size() <= 100));
+    }
+    function validProduct(d) {
+      return d.keys().hasOnly(['name','price','category','description','image','images','featured','stock','createdAt','updatedAt'])
+        && text(d.name, 2, 160) && d.price is number && d.price > 0 && d.price <= 1000000
+        && d.category in ['Bags','Belts','Wallets','Jackets','Keychains']
+        && text(d.description, 10, 10000) && text(d.image, 1, 2048)
+        && d.images is list && d.images.size() > 0 && d.images.size() <= 10
+        && d.featured is bool && d.stock is int && d.stock >= 0 && d.stock <= 100000
+        && d.createdAt is timestamp && d.updatedAt is timestamp;
+    }
+    match /products/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid && validUser(request.resource.data)
+        && request.resource.data.role == 'user' && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && request.auth.uid == uid && validUser(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','addresses','wishlist']);
+      allow delete: if false;
+    }
+    match /orders/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Even admin fulfillment goes through server transactions. Direct status
+      // changes would bypass cancellation restock and verified-buyer records.
+      allow write: if false;
+    }
+    function validReview(d, id) {
+      return d.keys().hasOnly(['productId','userId','userName','rating','comment','createdAt','updatedAt'])
+        && d.userId == request.auth.uid && id == d.productId + '_' + request.auth.uid
+        && text(d.productId, 1, 120) && text(d.userName, 1, 100)
+        && d.rating is int && d.rating >= 1 && d.rating <= 5
+        && text(d.comment, 5, 2000) && d.createdAt is timestamp
+        && (!('updatedAt' in d) || d.updatedAt == request.time)
+        && exists(/databases/$(database)/documents/products/$(d.productId))
+        && exists(/databases/$(database)/documents/verifiedPurchases/$(id));
+    }
+    match /reviews/{id} {
+      allow read: if true;
+      allow create: if signedIn() && validReview(request.resource.data, id) && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    match /verifiedPurchases/{id} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+    function validContact(d) {
+      return d.keys().hasOnly(['name','email','subject','message','read','createdAt'])
+        && text(d.name, 2, 100) && text(d.email, 5, 254) && d.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && text(d.subject, 2, 200) && text(d.message, 10, 5000)
+        && d.read == false && d.createdAt == request.time;
+    }
+    match /contacts/{id} {
+      allow create: if validContact(request.resource.data);
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
+    }
+    match /refunds/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /supportThreads/{orderId} {
+      // An owner may check whether a chat exists before requesting an agent.
+      allow get: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
+      allow list: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+      match /messages/{messageId} {
+        allow read: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/supportThreads/$(orderId)).data.userId == request.auth.uid);
+        allow write: if false;
+      }
+    }
+    match /emailOutbox/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

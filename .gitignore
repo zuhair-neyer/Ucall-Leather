@@ -1,0 +1,35 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+next.user-config.*
+
+# Environment variables
+.env*.local
+.env
+.env.*
+!.env.example
+*service-account*.json
+*firebase-adminsdk*.json
+serviceAccount*.json
+.firebase/
+audit-*.json
+firebase-debug.log*
+firestore-debug.log*
+storage-debug.log*
+ui-debug.log*
+*.tsbuildinfo
+test-results/
+playwright-report/
+playwright-emulator-report/
+
+# Common ignores
+node_modules
+.next/
+.next-e2e/
+auth-debug.log*
+.DS_Store
+.vercel
